@@ -9,7 +9,21 @@ Think a bit about the row counts: how many distinct vendors, product names are t
 How many customers are there (y). 
 Before your final group by you should have the product of those two queries (x*y).  */
 
-
+SELECT
+    v.vendor_name,
+    p.product_name,
+    SUM(5 * vi.original_price * c.customer_count) AS total_revenue
+FROM
+    vendor v
+JOIN
+    vendor_inventory vi ON v.vendor_id = vi.vendor_id
+JOIN
+    product p ON vi.product_id = p.product_id
+CROSS JOIN
+    (SELECT COUNT(DISTINCT customer_id) AS customer_count FROM customer) c
+GROUP BY
+    v.vendor_name,
+    p.product_name;
 
 -- INSERT
 /*1.  Create a new table "product_units". 
@@ -17,19 +31,50 @@ This table will contain only products where the `product_qty_type = 'unit'`.
 It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
 Name the timestamp column `snapshot_timestamp`. */
 
-
+CREATE TABLE product_units AS
+SELECT 
+    *, 
+    CURRENT_TIMESTAMP AS snapshot_timestamp
+FROM 
+    product
+WHERE 
+    product_qty_type = 'unit';
 
 /*2. Using `INSERT`, add a new row to the product_units table (with an updated timestamp). 
 This can be any product you desire (e.g. add another record for Apple Pie). */
 
-
+INSERT INTO product_units (product_id, product_name, product_size, product_category_id, product_qty_type, snapshot_timestamp)
+SELECT
+    product_id,
+    product_name,
+    product_size,
+    product_category_id,
+    product_qty_type,
+    CURRENT_TIMESTAMP
+FROM
+    product AS p
+WHERE
+    product_id = 7;
 
 -- DELETE
 /* 1. Delete the older record for the whatever product you added. 
 
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
 
-
+WITH older_record AS (
+    SELECT 
+        product_id,
+        MIN(snapshot_timestamp) AS snapshot_timestamp
+    FROM 
+        product_units
+    WHERE 
+        product_id = 7
+    GROUP BY 
+        product_id
+)
+DELETE FROM product_units
+WHERE product_id = (SELECT product_id FROM older_record)
+AND snapshot_timestamp = (SELECT snapshot_timestamp FROM older_record);
 
 -- UPDATE
 /* 1.We want to add the current_quantity to the product_units table. 
@@ -47,5 +92,24 @@ Third, SET current_quantity = (...your select statement...), remembering that WH
 Finally, make sure you have a WHERE statement to update the right row, 
 	you'll need to use product_units.product_id to refer to the correct row within the product_units table. 
 When you have all of these components, you can run the update statement. */
+
+ALTER TABLE product_units
+ADD current_quantity INT;
+UPDATE product_units
+SET current_quantity = (
+    SELECT COALESCE(vi.quantity, 0) AS current_quantity
+    FROM (
+        SELECT 
+            product_id,
+            quantity,
+            ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY market_date DESC) AS rn
+        FROM vendor_inventory
+    ) vi
+    WHERE vi.product_id = product_units.product_id AND vi.rn = 1
+)
+WHERE product_id IN (
+    SELECT product_id
+    FROM vendor_inventory
+);
 
 
