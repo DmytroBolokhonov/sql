@@ -14,7 +14,7 @@ We want to create employee shifts, splitting up the day into morning and evening
 
 ### Created a logical model for a small bookstore with employee shift
 
-![Bookstore Diagram](https://github.com/DmytroBolokhonov/sql/blob/model-design/02_activities/assignments/dmytro_bolokhonov_design_a_logical_model_2.png))
+![Bookstore Diagram](https://github.com/DmytroBolokhonov/sql/blob/model-design/02_activities/assignments/dmytro_bolokhonov_design_a_logical_model_2.png)
 
 ## Question 3
 The store wants to keep customer addresses. Propose two architectures for the CUSTOMER_ADDRESS table, one that will retain changes, and another that will overwrite. Which is type 1, which is type 2?
